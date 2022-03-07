@@ -5,4 +5,4 @@
 
 #### School of Engineering, Science and Technology, Universidad del Rosario.
 
-Research project. Modeling, simulating, and validating different approaches of modeling for El Farol congestion problem.
+Research project. Modeling, simulating, and validating in different approaches for El Farol congestion problem.
