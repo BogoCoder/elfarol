@@ -1,8 +1,8 @@
-# elfarol
+# Cognitive Models for El Farol
 
 ### Víctor Samuel Pérez Díaz
 ### Edgar Andrade Lotero
 
 #### School of Engineering, Science and Technology, Universidad del Rosario.
 
-Research project. Modeling, simulating, and validating in different approaches for El Farol congestion problem.
+Modeling, simulating, and validating different cognitive approaches for El Farol congestion problem.
