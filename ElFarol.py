@@ -34,10 +34,15 @@ class Agent :
             epsilon=params[0]
             last_c_t = self.states[-1]
             last_r_t = self.scores[-1]
-            if (last_c_t == 1 and last_r_t == 1) or (last_c_t != 1 and last_r_t == -1 or last_r_t == 0):
-                attendance_p = max((1 - self.attendance_probas[-1]) - epsilon/2, 0)
-            elif (last_c_t != 1 and last_r_t == 1) or (last_c_t == 1 and last_r_t == -1 or last_r_t == 0):
-                attendance_p = max(self.attendance_probas[-1] - epsilon/2, 0) 
+            # if (last_c_t == 1 and last_r_t == 1) or (last_c_t != 1):
+            #     attendance_p = 1 - epsilon/2
+            # elif (last_c_t == 1) and (last_r_t == -1):
+            #     attendance_p = epsilon/2
+
+            if (last_c_t == 1 and last_r_t == 1):
+                attendance_p = 1 - epsilon/2
+            elif (last_c_t == 1 and last_r_t == -1) or (last_c_t != 1):
+                attendance_p = epsilon/2
                 
 
         # Update attendance probabilities.
