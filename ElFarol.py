@@ -4,174 +4,164 @@ from random import uniform
 import matplotlib.pyplot as plt
 from scipy.stats import binom
 from scipy.optimize import minimize, Bounds
-from itertools import product
-
-class Agente :
-    
-    def __init__(self, states, puntajes, atractivos) :
-        self.state = states # lista
-        self.puntaje = puntajes # lista
-        self.attendance_p = atractivos # lista
-        
-    def toma_decision(self, modelo, parametros, threshold, attendances, DEB=False) :
-        '''
-        Se lanza un "dado" para decidir aleatoriamente si el agente va o no al bar
-        de acuerdo a si supera el umbral dado por el valor de para_ir
-        '''
-        attendance_p=self.attendance_p[-1] # Valor por defecto
-        beta=0
-
-        # determina el valor de para_ir de acuerdo al modelo y sus parámetros
-        if modelo == 'aleatorio' :
-            attendance_p=parametros[0]
-        
-        if modelo == 'belletal' :
-            N = threshold
-            Nk = np.sum(attendances)
-            xk = self.state[-1]
-            mu=parametros[0]
-            attendance_p=self.attendance_p[-1]-mu*(Nk-N)*xk
-            attendance_p = 1 if attendance_p > 1 else attendance_p
-            attendance_p = 0 if attendance_p < 0 else attendance_p
-
-        if modelo == 'win-stay-lose-shift' :
-            beta=parametros[0]
-            epsilon = parametros[1]
-            gamma = parametros[2]
-            if self.puntaje[-1] >= gamma :
-#                attendance_p = 1 - epsilon/2
-                attendance_p = max(self.attendance_p[-1] - epsilon/2, 0)
-            else:
-#                attendance_p = epsilon/2
-                attendance_p = max((1 - self.attendance_p[-1]) - epsilon/2, 0)
-
-        # Actualiza el attendance_p del agente
-        self.attendance_p.append(attendance_p)
-
-        
-        # Lanza el dado
-        if uniform(0,1) < attendance_p :
-            self.state.append(1)
-        else :
-            self.state.append(0)
-
-    def imprime_agente(self, ronda) :
-        try:
-            state = self.state[ronda]
-        except:
-            state = "nan"
-        try:
-            puntaje = self.puntaje[ronda]
-        except:
-            puntaje = "nan"
-        try:
-            attendance_p = self.attendance_p[ronda]
-        except:
-            attendance_p = "nan"
-
-        return "state:{0}, Puntaje:{1}, attendance_p:{2}".format(state, puntaje, attendance_p)
-
 from random import randint, uniform 
 import numpy as np
 
+class Agent :
+    
+    def __init__(self, states, scores, attendance_probas) :
+        self.states = states # list
+        self.scores = scores # list
+        self.attendance_probas = attendance_probas # list
+        
+    def take_decision(self, model, params, threshold, attendances, DEB=False) :
+
+        attendance_p=self.attendance_probas[-1] # Default
+
+        if model == 'random' :
+            attendance_p=params[0]
+        
+        if model == 'belletal' :
+            N = threshold
+            Nk = np.sum(attendances)
+            xk = self.states[-1]
+            mu=params[0]
+            attendance_p=self.attendance_probas[-1]-mu*(Nk-N)*xk
+            attendance_p = 1 if attendance_p > 1 else attendance_p
+            attendance_p = 0 if attendance_p < 0 else attendance_p
+
+        if model == 'win-stay-lose-shift' :
+            epsilon=params[0]
+            last_c_t = self.states[-1]
+            last_r_t = self.scores[-1]
+            if (last_c_t == 1 and last_r_t == 1) or (last_c_t != 1 and last_r_t == -1 or last_r_t == 0):
+                attendance_p = max((1 - self.attendance_probas[-1]) - epsilon/2, 0)
+            elif (last_c_t != 1 and last_r_t == 1) or (last_c_t == 1 and last_r_t == -1 or last_r_t == 0):
+                attendance_p = max(self.attendance_probas[-1] - epsilon/2, 0) 
+                
+
+        # Update attendance probabilities.
+        self.attendance_probas.append(attendance_p)
+
+        
+        # Throw a dice.
+        if uniform(0,1) < attendance_p :
+            self.states.append(1)
+        else :
+            self.states.append(0)
+
+    def print_agent(self, ronda) :
+        try:
+            state = self.states[ronda]
+        except:
+            state = "nan"
+
+        try:
+            score = self.scores[ronda]
+        except:
+            score = "nan"
+            
+        try:
+            attendance_p = self.attendance_probas[ronda]
+        except:
+            attendance_p = "nan"
+
+        return "State:{0}, Score:{1}, Attendance probability:{2}".format(state, score, attendance_p)
+
 class BarElFarol :
     
-    def __init__(self, num_agentes, umbral, modelo='aleatorio', parametros=[.5]) :
-        self.num_agentes = num_agentes
-        self.umbral = umbral
-        self.historia = []
-        self.agentes = []
-        for i in range(self.num_agentes) :
-            if modelo == 'aleatorio' :
-                self.agentes.append(Agente([randint(0,1)], [], [parametros[0]]))        
-            if modelo == 'belletal' :
-                self.agentes.append(Agente([randint(0,1)], [], [uniform(0,1)]))  
-            if modelo == 'rescorla-wagner' :
-                self.agentes.append(Agente([randint(0,1)], [], [parametros[1]]))        
-            if modelo == 'win-stay-lose-shift' :
-#                self.agentes.append(Agente([randint(0,1)], [], uniform(0,1))) 
-                aleatorio = randint(0,1)
-                self.agentes.append(Agente([aleatorio], [], [aleatorio])) 
+    def __init__(self, num_agents, threshold, model='random', params=[.5]) :
+        self.num_agents = num_agents
+        self.threshold = threshold
+        self.history = []
+        self.agents = []
+        for i in range(self.num_agents) :
+            if model == 'random' :
+                self.agents.append(Agent([randint(0,1)], [], [params[0]]))        
+            if model == 'belletal' :
+                self.agents.append(Agent([randint(0,1)], [], [uniform(0,1)]))        
+            if model == 'win-stay-lose-shift' :
+                random = randint(0,1)
+                self.agents.append(Agent([random], [], [uniform(0,1)])) 
             
-    def calcular_asistencia(self) :
-        asistencia = np.sum([a.state[-1] for a in self.agentes])
-        self.historia.append(asistencia)
+    def compute_attendance(self) :
+        attendance = np.sum([a.states[-1] for a in self.agents])
+        self.history.append(attendance)
 
-    def calcular_puntajes(self) :
-        asistencia = self.historia[-1]/self.num_agentes
-        for a in self.agentes:
-            if a.state[-1] == 1:
-                if asistencia > self.umbral:
-                    a.puntaje.append(-1)
+    def compute_scores(self) :
+        attendance = self.history[-1]/self.num_agents
+        for a in self.agents:
+            if a.states[-1] == 1:
+                if attendance > self.threshold:
+                    a.scores.append(-1)
                 else:
-                    a.puntaje.append(1)
+                    a.scores.append(1)
             else:
-                a.puntaje.append(0)
+                a.scores.append(0)
 
-    def agentes_deciden(self, modelo='aleatorio', parametros=[0.5], DEB=False) :
-        for i, a in enumerate(self.agentes) :
-            attendances = [a.state[-1]] + [self.agentes[j].state[-1] for j in range(self.num_agentes) if j != i]
-            a.toma_decision(modelo, parametros, threshold=self.umbral*self.num_agentes, attendances=attendances, DEB=DEB)
+    def agents_decide(self, model='random', params=[0.5], DEB=False) :
+        for i, a in enumerate(self.agents) :
+            attendances = [a.states[-1]] + [self.agents[j].states[-1] for j in range(self.num_agents) if j != i]
+            a.take_decision(model, params, threshold=self.threshold*self.num_agents, attendances=attendances, DEB=DEB)
                 
-    def imprime_ronda(self, ronda) :
+    def print_round(self, round) :
         try:
-            asistencia = self.historia[ronda]
+            attendance = self.history[round]
         except:
-            asistencia = "nan"
-        cadena = '='*30
-        cadena += f"\nRonda: {ronda} || Asistencia: {asistencia}"
-        for a in self.agentes:
-            cadena += "\n" + a.imprime_agente(ronda)
-        print(cadena)
+            attendance = "nan"
+        string_text = '='*30
+        string_text += f"\nRound: {round} || Attendance: {attendance}"
+        for a in self.agents:
+            string_text += "\n" + a.print_agent(round)
+        print(string_text)
         
-    def guardar_pandas(self) :
+    def save_pandas(self) :
         dict = {}
-        ronda = []
-        agentes = []
+        round = []
+        agents = []
         states = []
-        puntajes = []
-        atractivos = []
-        for i in range(len(self.agentes)):
-            a = self.agentes[i]
-            ronda += [x for x in range(1, len(a.state))]
-            agentes += [i]*len(a.puntaje)
-            states += a.state[:-1]
-            puntajes += a.puntaje
-            atractivos += a.attendance_p[:-1]
-#        print(len(agentes), len(states), len(puntajes), len(atractivos))
-        dict['round'] = ronda
-        dict['player'] = agentes
+        scores = []
+        probabilities = []
+        for i in range(len(self.agents)):
+            a = self.agents[i]
+            round += [x for x in range(1, len(a.states))]
+            agents += [i]*len(a.scores)
+            states += a.states[:-1]
+            scores += a.scores
+            probabilities += a.attendance_probas[:-1]
+        dict['round'] = round
+        dict['agent'] = agents
         dict['choice'] = states
-        dict['score'] = puntajes
-        dict['motivated'] = atractivos
+        dict['score'] = scores
+        dict['probability'] = probabilities
         return pd.DataFrame.from_dict(dict) 
 
-def simulacion(modelo,parametros,num_agentes,umbral,num_iteraciones,Nsim=1) :
-    lista_dataframes = []
+def simulation(model,params,num_agents,threshold,num_it,Nsim=1) :
+    list_df = []
     for n in range(Nsim):
         bar=BarElFarol(
-            num_agentes, 
-            umbral, 
-            num_iteraciones, 
-            modelo=modelo, 
-            parametros=parametros
+            num_agents, 
+            threshold, 
+            num_it, 
+            model=model, 
+            params=params
         )        
-        for t in range(num_iteraciones) : 
-            bar.calcular_asistencia()
-            bar.calcular_puntajes()
-            bar.agentes_deciden(modelo=modelo,parametros=parametros,DEB=False)
-        data = bar.guardar_pandas()
-        data.sort_values(by=['round', 'player'], inplace=True)
+        for t in range(num_it) : 
+            bar.compute_attendance()
+            bar.compute_scores()
+            bar.agents_decide(model=model,params=params,DEB=False)
+        data = bar.save_pandas()
+        data.sort_values(by=['round', 'agent'], inplace=True)
         data['group'] = n
-        data=data[['group','round','player','choice','score','motivated']]
-        lista_dataframes.append(data)
-    return pd.concat(lista_dataframes)
+        data=data[['group','round','agent','choice','score','probability']]
+        list_df.append(data)
+    return pd.concat(list_df)
 
 def visual(data_sim, data_obs) :
     data = pd.concat([data_sim,data_obs])
     attendance = pd.DataFrame(data.groupby(['source', 'group', 'round'])['choice'].sum().reset_index())
     attendance.columns = ['source', 'group', 'round', 'attendance']
-    scores = pd.DataFrame(data.groupby(['source','group','player'])['score'].mean().reset_index())
+    scores = pd.DataFrame(data.groupby(['source','group','agent'])['score'].mean().reset_index())
     fig,ax=plt.subplots(1,2,figsize=(8,4))
     sns.lineplot('round', 'attendance', hue='source', data=attendance,ax=ax[0])
     sns.boxplot(data=scores, y='score', x='source', ax=ax[1])
