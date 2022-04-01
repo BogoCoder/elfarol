@@ -43,7 +43,43 @@ class Agent :
                 attendance_p = 1 - epsilon/2
             elif (last_c_t == 1 and last_r_t == -1) or (last_c_t != 1):
                 attendance_p = epsilon/2
-                
+
+        if model == 'p-self' :
+            gamma1=params[0]
+            gamma2=params[1]
+            last_c_t = self.states[-1]
+
+            if (last_c_t == 1):
+                attendance_p = gamma1
+            elif (last_c_t == 0):
+                attendance_p = gamma2
+
+        if model == 'p-partner' :
+            gamma1=params[0]
+            gamma2=params[1]
+            last_c_t_partner = attendances[-1]
+
+            if (last_c_t_partner == 1):
+                attendance_p = gamma1
+            elif (last_c_t_partner == 0):
+                attendance_p = gamma2     
+
+        if model == 'p-mixed' :
+            gamma1=params[0]
+            gamma2=params[1]
+            gamma3=params[2]
+            gamma4=params[3]
+            last_c_t = self.states[-1]
+            last_c_t_partner = attendances[-1]
+
+            if (last_c_t == 1 and last_c_t_partner == 1):
+                attendance_p = gamma1
+            elif (last_c_t == 0 and last_c_t_partner == 1):
+                attendance_p = gamma2 
+            elif (last_c_t == 1 and last_c_t_partner == 0):
+                attendance_p = gamma3 
+            elif (last_c_t == 0 and last_c_t_partner == 0):
+                attendance_p = gamma4         
 
         # Update attendance probabilities.
         self.attendance_probas.append(attendance_p)
@@ -83,11 +119,22 @@ class BarElFarol :
         for i in range(self.num_agents) :
             if model == 'random' :
                 self.agents.append(Agent([randint(0,1)], [], [params[0]]))        
-            if model == 'belletal' :
+            elif model == 'belletal' :
                 self.agents.append(Agent([randint(0,1)], [], [uniform(0,1)]))        
-            if model == 'win-stay-lose-shift' :
+            elif model == 'win-stay-lose-shift':
                 random = randint(0,1)
                 self.agents.append(Agent([random], [], [uniform(0,1)])) 
+            elif model == 'p-self' and self.num_agents==2:
+                random = randint(0,1)
+                self.agents.append(Agent([random], [], [uniform(0,1)])) 
+            elif model == 'p-partner' and self.num_agents==2:
+                random = randint(0,1)
+                self.agents.append(Agent([random], [], [uniform(0,1)])) 
+            elif model == 'p-mixed' and self.num_agents==2:
+                random = randint(0,1)
+                self.agents.append(Agent([random], [], [uniform(0,1)])) 
+            else:
+                raise  ValueError("Number of agents not valid or there is not such model.")
             
     def compute_attendance(self) :
         attendance = np.sum([a.states[-1] for a in self.agents])

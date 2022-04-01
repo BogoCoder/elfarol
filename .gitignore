@@ -1,0 +1,12 @@
+# All data files, large
+**/*.csv
+**/*.vot
+**/*.fits
+**/*.fit
+
+# Other not important stuff
+.ipynb_checkpoints/
+.vscode/
+__pycache__/*
+
+# But not these files
