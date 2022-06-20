@@ -22,14 +22,14 @@ class Agent :
             attendance_p=params[0]
         
         if model == 'belletal' :
-            N = threshold
+            N = int(threshold)
             Nk = np.sum(attendances)
             xk = self.states[-1]
             mu=params[0]
             attendance_p=self.attendance_probas[-1]-mu*(Nk-N)*xk
             attendance_p = 1 if attendance_p > 1 else attendance_p
             attendance_p = 0 if attendance_p < 0 else attendance_p
-
+            
         if model == 'win-stay-lose-shift' :
             epsilon=params[0]
             last_c_t = self.states[-1]
@@ -151,11 +151,13 @@ class BarElFarol :
             else:
                 a.scores.append(0)
 
-    def agents_decide(self, model='random', params=[0.5], DEB=False) :
+    def agents_decide(self, model='random', params=[0.5], DEB=False):
+        attendances = []
         for i, a in enumerate(self.agents) :
-            attendances = [a.states[-1]] + [self.agents[j].states[-1] for j in range(self.num_agents) if j != i]
-            a.take_decision(model, params, threshold=self.threshold*self.num_agents, attendances=attendances, DEB=DEB)
-                
+            attendances.append([a.states[-1]] + [self.agents[j].states[-1] for j in range(self.num_agents) if j != i])
+        for i, a in enumerate(self.agents) :
+            a.take_decision(model, params, threshold=self.threshold*self.num_agents, attendances=attendances[i], DEB=DEB)
+        
     def print_round(self, round) :
         try:
             attendance = self.history[round]
